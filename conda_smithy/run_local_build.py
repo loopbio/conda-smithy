@@ -97,6 +97,9 @@ def run_linux_local(recipe_root='.', no_rerender=False, no_docker_pull=False, n_
 
     # Collect jobs
     jobs = _collect_linux_jobs(recipe_root)
+    print('Will build:')
+    print(list_linux_jobs(recipe_root))
+    print('-' * 80)
 
     # Filter jobs
     if only:
@@ -109,10 +112,10 @@ def run_linux_local(recipe_root='.', no_rerender=False, no_docker_pull=False, n_
             check_call([docker_executable, 'pull', docker_image])
 
     # Run
-    retcodes = multiprocessing.dummy.Pool(n_threads).map(_run_one_linux_job, jobs)
+    results = multiprocessing.dummy.Pool(n_threads).map(_run_one_linux_job, jobs)
 
     # Summary report
-    for job, retcode, logfile in retcodes:
+    for job, retcode, logfile in results:
         print(job.name, retcode if retcode else 'OK', logfile)
 
     print('Done')
@@ -128,11 +131,14 @@ def list_linux_jobs(recipe_root):
 
 
 if __name__ == '__main__':
-    recipe_root = op.expanduser('~/opencv-feedstock')
-    # recipe_root = '/home/santi/Proyectos/--work/loopbio/condas-and-dockers/conda/ffmpeg-feedstock'
-    recipe_root = '/home/santi/Proyectos/--work/loopbio/condas-and-dockers/conda/av-feedstock'
-    print(list_linux_jobs(recipe_root))
-    run_linux_local(recipe_root, n_threads=3)
+    RECIPES_ROOT = op.expanduser('~/Proyectos/--work/loopbio/condas-and-dockers/conda')
+    recipe_root = op.join(RECIPES_ROOT, 'ffmpeg-feedstock')
+    recipe_root = op.join(RECIPES_ROOT, 'ffmpeg-nogpl-feedstock')
+    recipe_root = op.join(RECIPES_ROOT, 'av-feedstock')
+    recipe_root = op.join(RECIPES_ROOT, 'opencv-vanilla-feedstock')
+    recipe_root = op.join(RECIPES_ROOT, 'tensorflow-feedstock')
+    recipe_root = op.join(RECIPES_ROOT, 'tensorboard-feedstock')
+    run_linux_local(recipe_root, n_threads=4)
 
 # Unfortunately circleci CLI does not really cut it for these cases:
 #  https://circleci.com/docs/2.0/local-jobs/
@@ -143,10 +149,8 @@ if __name__ == '__main__':
 # Using conda-forge.yml or the like is disallowed.
 # In this way we are a bit more isolated on how information flows into .circleci/config.yml
 
-# TODO: we should call docker kill when killing the parent process
-
-# Thanks John. Just as a note, to be fully correct we probably should also use {{ docker.command }}
-# instead of hardcoding "docker". But I do not think it will ever matter.
+# To be fully correct we probably should also use {{ docker.command }}
+# instead of hardcoding "docker" in circleci rendering. But I do not think it will ever matter.
 
 # Note that although that is true at the moment of writing this function (20170809),
 # we do not assume that all jobs share the same docker (executable, image) configuration.
@@ -157,9 +161,8 @@ if __name__ == '__main__':
 # harmless too, so there it is.
 
 # FIXME: it could be great
+# TODO: we should call docker kill when killing the parent process
 #  - it does not stops the docker container gracefully if the thread/process is killed
 #  - when SIGTERM and the like are captured by a program (e.g. pycharm) and using signal
 #  - we are constrained by whatever is generated
 # Until then: docker kill $(docker ps -q)
-
-# Unfortunately,
