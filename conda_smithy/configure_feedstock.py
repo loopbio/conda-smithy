@@ -10,7 +10,13 @@ import yaml
 import warnings
 
 import conda.api
-import conda.config
+try:
+    import conda.config as conda_config
+except ImportError:
+    import conda.exports as conda_config
+    # Note now things are "a view"; for example, config comes from:
+    #   conda.base.context.context.subdir
+    #   conda.base.context.context.subdir
 
 try:
     # Try conda's API in newer 4.2.x and 4.3.x.
@@ -213,11 +219,11 @@ def fudge_subdir(subdir, build_config):
 
     """
     # Store conda-build and conda.config's existing settings.
-    conda_orig = conda.config.subdir
+    conda_orig = conda_config.subdir
     cb_orig = build_config.subdir
 
     # Set them to what we want.
-    conda.config.subdir = subdir
+    conda_config.subdir = subdir
     build_config.subdir = subdir
 
     if not hasattr(conda_build, 'api'):
@@ -228,7 +234,7 @@ def fudge_subdir(subdir, build_config):
     yield
 
     # Set them back to what they were
-    conda.config.subdir = conda_orig
+    conda_config.subdir = conda_orig
     build_config.subdir = cb_orig
 
     if not hasattr(conda_build, 'api'):
