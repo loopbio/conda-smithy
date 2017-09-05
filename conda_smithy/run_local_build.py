@@ -108,7 +108,7 @@ def run_linux_local(recipe_root='.', no_rerender=False, no_docker_pull=False, n_
         print('No jobs, exiting')
         return []
     print('Will build:')
-    print(jobs)
+    print('  ' + '\n  '.join(job.name for job in jobs))
     print('-' * 80)
 
     # Do run docker pull, but not in parallel
