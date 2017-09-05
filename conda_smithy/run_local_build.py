@@ -72,9 +72,10 @@ def _run_one_linux_job(job):
     env = os.environ.copy()
     for k, v in job.envvars:
         env[k] = v
-    logs_dir = _ensure_writable_dir(job.recipe_root, 'build_logs', 'linux')
+    logs_dir = _ensure_writable_dir(job.recipe_root, 'build_artefacts', 'build_logs', 'linux')
     timestamp = str(datetime.datetime.now()).replace(' ', '_').replace(':', '-').replace('.', '-')
     log_file = op.join(logs_dir, job.name + '.' + timestamp)
+
     with open(log_file, 'wt', 2) as log_writer:
         retcode = call(
             op.join(job.recipe_root, 'ci_support', 'run_docker_build.sh'),
@@ -86,7 +87,7 @@ def _run_one_linux_job(job):
         return job, retcode, log_file
 
 
-def run_linux_local(recipe_root='.', no_rerender=False, no_docker_pull=False, n_threads=1, only=()):
+def run_linux_local(recipe_root='.', no_rerender=False, no_docker_pull=False, n_threads=1, safe=True, only=()):
 
     # Rerender
     if not no_rerender:
@@ -97,13 +98,18 @@ def run_linux_local(recipe_root='.', no_rerender=False, no_docker_pull=False, n_
 
     # Collect jobs
     jobs = _collect_linux_jobs(recipe_root)
-    print('Will build:')
-    print(list_linux_jobs(recipe_root))
-    print('-' * 80)
 
     # Filter jobs
     if only:
         jobs = [job for i, job in enumerate(jobs) if job.name in only or str(i) in only]
+
+    # Anything to do?
+    if not jobs:
+        print('No jobs, exiting')
+        return []
+    print('Will build:')
+    print(list_linux_jobs(recipe_root))
+    print('-' * 80)
 
     # Do run docker pull, but not in parallel
     if not no_docker_pull:
@@ -111,8 +117,20 @@ def run_linux_local(recipe_root='.', no_rerender=False, no_docker_pull=False, n_
         for docker_executable, docker_image in images:
             check_call([docker_executable, 'pull', docker_image])
 
+    # Make build_artefacts writable from this process
+    artefacts_dir = _ensure_writable_dir(recipe_root, 'build_artefacts')
+
+    # Here we will store the results of building
+    results = []
+
+    # Do not download recipe assets in parallel, so there are no race conditions
+    # Checksum tests will fail otherwise (because some runs will check against partially downloaded assets)
+    # Of course, this is a PITA (but it is hard to impossible to trick conda-build into using different dirs per job)
+    if safe or not op.isdir(op.join(artefacts_dir, 'src_cache')):
+        results.append(_run_one_linux_job(jobs[0]))
+
     # Run
-    results = multiprocessing.dummy.Pool(n_threads).map(_run_one_linux_job, jobs)
+    results += multiprocessing.dummy.Pool(n_threads).map(_run_one_linux_job, jobs)
 
     # Summary report
     for job, retcode, logfile in results:
