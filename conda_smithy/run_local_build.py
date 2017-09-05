@@ -59,7 +59,7 @@ def _collect_linux_jobs(recipe_root):
     with open(op.join(recipe_root, '.circleci', 'config.yml'), 'rt') as reader:
         circleci_config = yaml.load(reader, Loader=yaml.RoundTripLoader)  # roundrip => we keep order of jobs
     jobs = []
-    for job_name, jobconfig in circleci_config['jobs'].items():
+    for job_name, jobconfig in sorted(circleci_config['jobs'].items(), reverse=True):
         job_envvars = [envvar.popitem() for envvar in jobconfig.get('environment', ())]
         jobs.append(_LinuxJob(recipe_root,
                               job_name, job_envvars,
@@ -108,7 +108,7 @@ def run_linux_local(recipe_root='.', no_rerender=False, no_docker_pull=False, n_
         print('No jobs, exiting')
         return []
     print('Will build:')
-    print(list_linux_jobs(recipe_root))
+    print(jobs)
     print('-' * 80)
 
     # Do run docker pull, but not in parallel
@@ -156,7 +156,7 @@ if __name__ == '__main__':
     recipe_root = op.join(RECIPES_ROOT, 'opencv-vanilla-feedstock')
     recipe_root = op.join(RECIPES_ROOT, 'tensorflow-feedstock')
     recipe_root = op.join(RECIPES_ROOT, 'tensorboard-feedstock')
-    run_linux_local(recipe_root, n_threads=4)
+    run_linux_local(recipe_root, n_threads=4, only=[])
 
 # Unfortunately circleci CLI does not really cut it for these cases:
 #  https://circleci.com/docs/2.0/local-jobs/
