@@ -101,7 +101,7 @@ def run_linux_local(recipe_root='.', no_rerender=False, no_docker_pull=False, n_
 
     # Filter jobs
     if only:
-        jobs = [job for i, job in enumerate(jobs) if job.name in only or str(i) in only]
+        jobs = [job for i, job in enumerate(jobs) if job.name in only or str(i) in only or i in only]
 
     # Anything to do?
     if not jobs:
