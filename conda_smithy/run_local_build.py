@@ -150,13 +150,17 @@ def list_linux_jobs(recipe_root):
 
 if __name__ == '__main__':
     RECIPES_ROOT = op.expanduser('~/Proyectos/--work/loopbio/condas-and-dockers/conda')
-    recipe_root = op.join(RECIPES_ROOT, 'ffmpeg-feedstock')
-    recipe_root = op.join(RECIPES_ROOT, 'ffmpeg-nogpl-feedstock')
-    recipe_root = op.join(RECIPES_ROOT, 'av-feedstock')
-    recipe_root = op.join(RECIPES_ROOT, 'opencv-vanilla-feedstock')
-    recipe_root = op.join(RECIPES_ROOT, 'tensorflow-feedstock')
-    recipe_root = op.join(RECIPES_ROOT, 'tensorboard-feedstock')
-    run_linux_local(recipe_root, n_threads=4, only=[])
+    recipes = [
+        op.join(RECIPES_ROOT, 'ffmpeg-feedstock'),
+        op.join(RECIPES_ROOT, 'ffmpeg-nogpl-feedstock'),
+        op.join(RECIPES_ROOT, 'av-feedstock'),
+        op.join(RECIPES_ROOT, 'opencv-vanilla-feedstock'),
+        op.join(RECIPES_ROOT, 'tensorboard-feedstock'),
+        op.join(RECIPES_ROOT, 'tensorflow-feedstock'),
+    ]
+
+    for recipe_root in recipes:
+        run_linux_local(recipe_root, n_threads=4, only=[])
 
 # Unfortunately circleci CLI does not really cut it for these cases:
 #  https://circleci.com/docs/2.0/local-jobs/
